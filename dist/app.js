@@ -214,9 +214,10 @@ if (Fliplet.Env.get('development')) {
   };
 }
 
-(function () {
-  var data = Fliplet.Widget.getData();
+var data = Fliplet.Widget.getData();
+data.fields = data.fields || {};
 
+function initializeInterface() {
   var fields = _.get(data, 'configuration.fields', []);
 
   if (!fields.length) {
@@ -227,7 +228,7 @@ if (Fliplet.Env.get('development')) {
   }
 
   if (data.configuration && data.configuration.beforeReady) {
-    var beforeReady = new Function(data.configuration.beforeReady)();
+    var beforeReady = typeof data.configuration.beforeReady === 'function' ? data.configuration.beforeReady : new Function(data.configuration.beforeReady)();
 
     if (beforeReady) {
       try {
@@ -285,12 +286,33 @@ if (Fliplet.Env.get('development')) {
       }
     }
   });
-  new Vue({
+  return new Vue({
     el: '#helper-configuration',
     render: function render(createElement) {
       return createElement(_Application_vue__WEBPACK_IMPORTED_MODULE_1__["default"]);
     }
   });
+}
+/**
+ * Manually initializes the interface.
+ * This can be called by a widget interface.js file
+ * @param {Object} configuration - The configuration object
+ * @returns {Vue} The vue instance of the interface
+ */
+
+
+Fliplet.Helper.generateConfigurationInterface = function (configuration) {
+  data.configuration = configuration;
+  return initializeInterface();
+};
+
+(function () {
+  // Do not initialize the UI when it's called from a widget instance
+  if (data.uuid) {
+    return;
+  }
+
+  return initializeInterface();
 })();
 
 /***/ }),
@@ -590,7 +612,7 @@ __webpack_require__.r(__webpack_exports__);
 
               case 6:
                 if (_this.configuration.beforeSave) {
-                  beforeSaveFunction = new Function(_this.configuration.beforeSave)();
+                  beforeSaveFunction = typeof _this.configuration.beforeSave === 'function' ? _this.configuration.beforeSave : new Function(_this.configuration.beforeSave)();
 
                   if (beforeSaveFunction) {
                     try {
@@ -617,6 +639,15 @@ __webpack_require__.r(__webpack_exports__);
                   try {
                     data = JSON.parse(JSON.stringify(_this.fields));
                   } catch (e) {// Silent error
+                  }
+
+                  data = _.omit(data, ['id', 'package', 'uuid', 'version']);
+
+                  if (_this.uuid) {
+                    // Save to widget instance settings data
+                    return Fliplet.Widget.save(data).then(function () {
+                      return Fliplet.Widget.complete();
+                    });
                   }
 
                   Fliplet.Studio.emit('page-preview-send-event', {
@@ -663,7 +694,7 @@ __webpack_require__.r(__webpack_exports__);
     });
 
     if (this.configuration.ready) {
-      var ready = new Function(this.configuration.ready)();
+      var ready = typeof this.configuration.ready === 'function' ? this.configuration.ready : new Function(this.configuration.ready)();
 
       if (ready) {
         try {
@@ -2644,7 +2675,7 @@ VeeValidate.extend('required', {
       }
 
       if (this.change) {
-        var change = new Function(this.change)();
+        var change = typeof this.change === 'function' ? this.change : new Function(this.change)();
         change.call(this, newValue);
       }
     }
@@ -2896,7 +2927,7 @@ VeeValidate.extend('required', {
     }
 
     if (this.ready) {
-      var ready = new Function(this.ready)();
+      var ready = typeof this.ready === 'function' ? this.ready : new Function(this.ready)();
       ready.call(this, this.$el, this.value);
     }
   }
@@ -2913,8 +2944,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findChildren", function() { return findChildren; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerFields", function() { return registerFields; });
 var data = Fliplet.Widget.getData();
-
-var helperInstances = _.get(data, 'helperInstances', []);
+var instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
 
 var instanceId = _.get(data, 'instanceId', '');
 
@@ -2956,7 +2986,7 @@ function prepareFilter(predicate) {
 
 function findAll(predicate) {
   predicate = prepareFilter(predicate);
-  return _.filter(helperInstances, function (instance) {
+  return _.filter(instances, function (instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -2968,7 +2998,7 @@ function findAll(predicate) {
 
 function findOne(predicate) {
   predicate = prepareFilter(predicate);
-  return _.find(helperInstances, function (instance) {
+  return _.find(instances, function (instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -2980,7 +3010,7 @@ function findOne(predicate) {
 
 function findChildren(predicate) {
   predicate = prepareFilter(predicate);
-  return _.filter(helperInstances, function (instance) {
+  return _.filter(instances, function (instance) {
     return instance.id !== instanceId && instance.parentId && instance.parentId === instanceId && (predicate ? _.find([instance], predicate) : true);
   });
 }
@@ -2998,7 +3028,16 @@ function registerFields(fields) {
  */
 
 Fliplet.Helper.find = function (predicate) {
-  return _.filter(helperInstances, prepareFilter(predicate));
+  // Allow async find for widget instances
+  if (data.id) {
+    return Fliplet.API.request({
+      url: 'v1/apps/' + Fliplet.Env.get('appId') + '/pages/' + Fliplet.Env.get('pageId') + '/helper-instances'
+    }).then(function (response) {
+      return _.filter(response.helpers, predicate);
+    });
+  }
+
+  return _.filter(instances, prepareFilter(predicate));
 };
 /**
  * Finds matching helper instances
@@ -3008,7 +3047,14 @@ Fliplet.Helper.find = function (predicate) {
 
 
 Fliplet.Helper.findOne = function (predicate) {
-  return _.find(helperInstances, prepareFilter(predicate));
+  // Allow async find for widget instances
+  if (data.id) {
+    return Fliplet.Helper.find(predicate).then(function (results) {
+      return _.first(results);
+    });
+  }
+
+  return _.find(instances, prepareFilter(predicate));
 };
 
 Fliplet.Helper.field = function (name) {

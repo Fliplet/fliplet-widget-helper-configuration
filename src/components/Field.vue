@@ -251,7 +251,9 @@ export default {
       }
 
       if (this.change) {
-        const change = new Function(this.change)();
+        const change = typeof this.change === 'function'
+          ? this.change
+          : new Function(this.change)();
 
         change.call(this, newValue);
       }
@@ -484,7 +486,9 @@ export default {
     }
 
     if (this.ready) {
-      const ready = new Function(this.ready)();
+      const ready = typeof this.ready === 'function'
+        ? this.ready
+        : new Function(this.ready)();
 
       ready.call(this, this.$el, this.value);
     }

@@ -1,5 +1,5 @@
 const data = Fliplet.Widget.getData();
-const helperInstances = _.get(data, 'helperInstances', []);
+const instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
 const instanceId = _.get(data, 'instanceId', '');
 let fieldInstances = {};
 
@@ -38,7 +38,7 @@ function prepareFilter(predicate) {
 export function findAll(predicate) {
   predicate = prepareFilter(predicate);
 
-  return _.filter(helperInstances, function(instance) {
+  return _.filter(instances, function(instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -51,7 +51,7 @@ export function findAll(predicate) {
 export function findOne(predicate) {
   predicate = prepareFilter(predicate);
 
-  return _.find(helperInstances, function(instance) {
+  return _.find(instances, function(instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -64,7 +64,7 @@ export function findOne(predicate) {
 export function findChildren(predicate) {
   predicate = prepareFilter(predicate);
 
-  return _.filter(helperInstances, function(instance) {
+  return _.filter(instances, function(instance) {
     return instance.id !== instanceId
       && instance.parentId
       && instance.parentId === instanceId
@@ -86,7 +86,16 @@ export function registerFields(fields) {
  * @returns {Array} The matched helpers
  */
 Fliplet.Helper.find = function(predicate) {
-  return _.filter(helperInstances, prepareFilter(predicate));
+  // Allow async find for widget instances
+  if (data.id) {
+    return Fliplet.API.request({
+      url: 'v1/apps/' + Fliplet.Env.get('appId') + '/pages/' + Fliplet.Env.get('pageId') + '/helper-instances'
+    }).then(function(response) {
+      return _.filter(response.helpers, predicate);
+    });
+  }
+
+  return _.filter(instances, prepareFilter(predicate));
 };
 
 /**
@@ -95,7 +104,14 @@ Fliplet.Helper.find = function(predicate) {
  * @returns {Helper} The matched helpers
  */
 Fliplet.Helper.findOne = function(predicate) {
-  return _.find(helperInstances, prepareFilter(predicate));
+  // Allow async find for widget instances
+  if (data.id) {
+    return Fliplet.Helper.find(predicate).then(function(results) {
+      return _.first(results);
+    });
+  }
+
+  return _.find(instances, prepareFilter(predicate));
 };
 
 Fliplet.Helper.field = function(name) {
