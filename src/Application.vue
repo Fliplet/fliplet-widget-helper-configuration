@@ -4,7 +4,7 @@
       <form ref="form" class="form-horizontal" v-on:submit.prevent="validate().then(onSubmit)">
         <header>
           <p>
-            {{ displayName || name }}
+            {{ widgetName || displayName || name }}
             <a v-if="supportUrl" :href="supportUrl" class="help-icon" target="_blank">
               <i class="fa fa-question-circle-o"></i>
             </a>
@@ -39,7 +39,10 @@ export default {
         fields: {},
         showSubmit: window.parent === window && Fliplet.Env.get('development')
       },
-      Fliplet.Widget.getData()
+      Fliplet.Widget.getData(),
+      {
+        widgetName: window.__widgetData[Fliplet.Widget.getData().id].name
+      }
     );
   },
   methods: {

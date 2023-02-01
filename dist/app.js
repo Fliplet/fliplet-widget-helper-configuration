@@ -241,7 +241,7 @@ function initializeInterface() {
   }
 
   fields.forEach(function (field) {
-    field.value = _.get(data.fields, field.name, field["default"]);
+    field.value = _.get(data, field.name, field["default"]);
 
     if (field.type === 'list') {
       if (field.value && field.value.length) {
@@ -417,7 +417,9 @@ var render = function () {
                       _c("p", [
                         _vm._v(
                           "\n          " +
-                            _vm._s(_vm.displayName || _vm.name) +
+                            _vm._s(
+                              _vm.widgetName || _vm.displayName || _vm.name
+                            ) +
                             "\n          "
                         ),
                         _vm.supportUrl
@@ -551,7 +553,9 @@ __webpack_require__.r(__webpack_exports__);
     return _.assign({
       fields: {},
       showSubmit: window.parent === window && Fliplet.Env.get('development')
-    }, Fliplet.Widget.getData());
+    }, Fliplet.Widget.getData(), {
+      widgetName: window.__widgetData[Fliplet.Widget.getData().id].name
+    });
   },
   methods: {
     // Methods can be used when the Vue instance is passed as context for
