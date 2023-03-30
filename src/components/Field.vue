@@ -492,6 +492,8 @@ export default {
 
       ready.call(this, this.$el, this.value);
     }
+
+    this.updateParentValue(this.value);
   }
 };
 </script>
