@@ -80,6 +80,16 @@ export function registerFields(fields) {
   fieldInstances = fields;
 }
 
+export function setFieldProperty(fieldName, prop, value) {
+  const field = _.find(fieldInstances, { name: fieldName });
+
+  if (!field) {
+    return;
+  }
+
+  field[prop] = value;
+}
+
 /**
  * Finds matching helper instances
  * @param {Function} predicate The function invoked per iteration
@@ -121,7 +131,7 @@ Fliplet.Helper.field = function(name) {
     return;
   }
 
-  return {
+  const instance = {
     toggle: function(show) {
       if (typeof field.show === 'undefined') {
         Vue.set(field, 'show', true);
@@ -140,6 +150,16 @@ Fliplet.Helper.field = function(name) {
     },
     set: function(value) {
       field.value = value;
+
+      if (field.provider) {
+        field.provider.emit('set-data', value);
+      }
     }
   };
+
+  if (field.type === 'provider') {
+    instance.provider = field.provider;
+  }
+
+  return instance;
 };

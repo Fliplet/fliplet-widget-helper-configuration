@@ -113,7 +113,7 @@
 
 <script>
 import bus from '../libs/bus';
-import { findAll, findOne, findChildren } from '../libs/lookups';
+import { findAll, findOne, findChildren, setFieldProperty } from '../libs/lookups';
 
 VeeValidate.extend('required', {
   validate(value) {
@@ -150,6 +150,7 @@ export default {
   data() {
     return {
       eventsBound: false,
+      provider: undefined,
       providerPromise: undefined,
       panelIsVisible: true,
       isFullScreenProvider: this.type === 'provider' && this.mode === 'full-screen',
@@ -183,6 +184,7 @@ export default {
     'options',
     'toggleLabel',
     'package',
+    'onEvent',
     'fields',
     'addLabel',
     'index',
@@ -265,6 +267,7 @@ export default {
     find: findAll,
     findOne: findOne,
     children: findChildren,
+    setFieldProperty: setFieldProperty,
     val(newValue) {
       if (typeof newValue !== 'undefined') {
         this.$set(this, 'value', newValue);
@@ -415,7 +418,7 @@ export default {
         value = { selectFiles: value };
       } else if (this.package === 'com.fliplet.data-source-provider') {
         // Apply default values to ensure data sources and security rules are correctly managed
-        value = _.assignIn({}, this.default, value);
+        value = _.assignIn({ appId: Fliplet.Env.get('appId') }, this.default, value);
 
         // Data source provider wants a slightly different input from the original output
         if (value.id) {
@@ -423,13 +426,23 @@ export default {
         }
       }
 
+      let onEvent;
+
+      if (this.onEvent) {
+        onEvent = new Function(this.onEvent)();
+      }
+
       this.provider = Fliplet.Widget.open(this.package, {
         selector: target ? target[0] : undefined,
         data: typeof value === 'object'
           // Normalize Vue objects into plain JSON objects
           ? JSON.parse(JSON.stringify(value))
-          : value
+          : value,
+        onEvent: onEvent
       });
+
+      // Set provider property against the field
+      this.setFieldProperty(this.name, 'provider', this.provider);
 
       this.providerPromise = new Promise((resolve) => {
         this.provider.then((result) => {
@@ -449,6 +462,7 @@ export default {
             delete window.currentProvider;
             delete this.provider;
 
+            this.setFieldProperty(this.name, 'provider', null);
             this.providerPromise = undefined;
 
             Fliplet.Widget.resetSaveButtonLabel();
@@ -490,7 +504,7 @@ export default {
         ? this.ready
         : new Function(this.ready)();
 
-      ready.call(this, this.$el, this.value);
+      ready.call(this, this.$el, this.value, this.provider);
     }
 
     this.updateParentValue(this.value);
