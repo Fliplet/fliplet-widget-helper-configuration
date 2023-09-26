@@ -1,5 +1,5 @@
 {
-  "name": "Interface framework",
+  "name": "Component interface framework",
   "package": "com.fliplet.helper-configuration",
   "version": "1.0.0",
   "description": "",
@@ -28,9 +28,7 @@
     ]
   },
   "build": {
-    "dependencies": [
-      "fliplet-core"
-    ],
+    "dependencies": ["fliplet-core"],
     "assets": []
   }
 }
