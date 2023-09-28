@@ -119,7 +119,7 @@ function initializeInterface() {
   }
 
   fields.forEach((field) => {
-    field.value = _.get(data, field.name, field.default);
+    field.value = _.get((typeof data.instanceId === 'string' ? data.fields : data), field.name, field.default);
 
     if (field.type === 'list') {
       if (field.value && field.value.length) {
