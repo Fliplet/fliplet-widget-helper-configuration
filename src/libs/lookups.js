@@ -97,7 +97,7 @@ export function setFieldProperty(fieldName, prop, value) {
  */
 Fliplet.Helper.find = function(predicate) {
   // Allow async find for widget instances
-  if (data.id) {
+  if (typeof data.id === 'number') {
     return Fliplet.API.request({
       url: 'v1/apps/' + Fliplet.Env.get('appId') + '/pages/' + Fliplet.Env.get('pageId') + '/helper-instances'
     }).then(function(response) {
@@ -115,7 +115,7 @@ Fliplet.Helper.find = function(predicate) {
  */
 Fliplet.Helper.findOne = function(predicate) {
   // Allow async find for widget instances
-  if (data.id) {
+  if (typeof data.id === 'number') {
     return Fliplet.Helper.find(predicate).then(function(results) {
       return _.first(results);
     });
