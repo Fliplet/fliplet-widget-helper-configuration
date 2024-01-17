@@ -193,7 +193,9 @@ export default {
     'headingFieldName',
     'emptyListPlaceholderHtml',
     'rules',
-    'validate'
+    'validate',
+    'data',
+    'beforeSave'
   ],
   computed: {
     providerHtml() {
@@ -412,6 +414,9 @@ export default {
     },
     openProvider(target) {
       let value = this.value || {};
+      let data = typeof this.data === 'function'
+        ? this.data.bind(this).call(this, value)
+        : this.data;
 
       // File picker wants a slightly different input from the original output
       if (this.package === 'com.fliplet.file-picker' && Array.isArray(value)) {
@@ -429,15 +434,21 @@ export default {
       let onEvent;
 
       if (this.onEvent) {
-        onEvent = new Function(this.onEvent)();
+        onEvent = typeof this.onEvent === 'function'
+          ? this.onEvent
+          : new Function(this.onEvent)();
+      }
+
+      if (!('data' in this)) {
+        data = typeof value === 'object'
+          // Normalize Vue objects into plain JSON objects
+          ? JSON.parse(JSON.stringify(value))
+          : value;
       }
 
       this.provider = Fliplet.Widget.open(this.package, {
         selector: target ? target[0] : undefined,
-        data: typeof value === 'object'
-          // Normalize Vue objects into plain JSON objects
-          ? JSON.parse(JSON.stringify(value))
-          : value,
+        data,
         onEvent: onEvent
       });
 
@@ -456,21 +467,31 @@ export default {
             value = result.data;
           }
 
-          this.$set(this, 'value', value);
+          let beforeSave;
 
-          if (this.isFullScreenProvider) {
-            delete window.currentProvider;
-            delete this.provider;
-
-            this.setFieldProperty(this.name, 'provider', null);
-            this.providerPromise = undefined;
-
-            Fliplet.Widget.resetSaveButtonLabel();
-
-            this.initProvider();
+          if (typeof this.beforeSave === 'function') {
+            beforeSave = this.beforeSave.bind(this).call(this, value);
+          } else {
+            beforeSave = Promise.resolve(value);
           }
 
-          resolve(this.value);
+          Promise.resolve(beforeSave).then((result) => {
+            this.$set(this, 'value', result);
+
+            if (this.isFullScreenProvider) {
+              delete window.currentProvider;
+              delete this.provider;
+
+              this.setFieldProperty(this.name, 'provider', null);
+              this.providerPromise = undefined;
+
+              Fliplet.Widget.resetSaveButtonLabel();
+
+              this.initProvider();
+            }
+
+            resolve(this.value);
+          });
         });
       });
     },

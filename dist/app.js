@@ -2624,7 +2624,7 @@ VeeValidate.extend('required', {
       }
     };
   },
-  props: ['type', 'name', 'listName', 'label', 'html', 'value', 'ready', 'change', 'warning', 'placeholder', 'default', 'description', 'required', 'rows', 'options', 'toggleLabel', 'package', 'onEvent', 'fields', 'addLabel', 'index', 'mode', 'show', 'headingFieldName', 'emptyListPlaceholderHtml', 'rules', 'validate'],
+  props: ['type', 'name', 'listName', 'label', 'html', 'value', 'ready', 'change', 'warning', 'placeholder', 'default', 'description', 'required', 'rows', 'options', 'toggleLabel', 'package', 'onEvent', 'fields', 'addLabel', 'index', 'mode', 'show', 'headingFieldName', 'emptyListPlaceholderHtml', 'rules', 'validate', 'data', 'beforeSave'],
   computed: {
     providerHtml: function providerHtml() {
       return Handlebars.compile(this.html)(this);
@@ -2861,7 +2861,8 @@ VeeValidate.extend('required', {
     openProvider: function openProvider(target) {
       var _this4 = this;
 
-      var value = this.value || {}; // File picker wants a slightly different input from the original output
+      var value = this.value || {};
+      var data = typeof this.data === 'function' ? this.data.bind(this).call(this, value) : this.data; // File picker wants a slightly different input from the original output
 
       if (this["package"] === 'com.fliplet.file-picker' && Array.isArray(value)) {
         value = {
@@ -2881,13 +2882,17 @@ VeeValidate.extend('required', {
       var onEvent;
 
       if (this.onEvent) {
-        onEvent = new Function(this.onEvent)();
+        onEvent = typeof this.onEvent === 'function' ? this.onEvent : new Function(this.onEvent)();
+      }
+
+      if (!('data' in this)) {
+        data = _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(value) === 'object' // Normalize Vue objects into plain JSON objects
+        ? JSON.parse(JSON.stringify(value)) : value;
       }
 
       this.provider = Fliplet.Widget.open(this["package"], {
         selector: target ? target[0] : undefined,
-        data: _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(value) === 'object' // Normalize Vue objects into plain JSON objects
-        ? JSON.parse(JSON.stringify(value)) : value,
+        data: data,
         onEvent: onEvent
       }); // Set provider property against the field
 
@@ -2902,21 +2907,31 @@ VeeValidate.extend('required', {
             value = result.data;
           }
 
-          _this4.$set(_this4, 'value', value);
+          var beforeSave;
 
-          if (_this4.isFullScreenProvider) {
-            delete window.currentProvider;
-            delete _this4.provider;
-
-            _this4.setFieldProperty(_this4.name, 'provider', null);
-
-            _this4.providerPromise = undefined;
-            Fliplet.Widget.resetSaveButtonLabel();
-
-            _this4.initProvider();
+          if (typeof _this4.beforeSave === 'function') {
+            beforeSave = _this4.beforeSave.bind(_this4).call(_this4, value);
+          } else {
+            beforeSave = Promise.resolve(value);
           }
 
-          resolve(_this4.value);
+          Promise.resolve(beforeSave).then(function (result) {
+            _this4.$set(_this4, 'value', result);
+
+            if (_this4.isFullScreenProvider) {
+              delete window.currentProvider;
+              delete _this4.provider;
+
+              _this4.setFieldProperty(_this4.name, 'provider', null);
+
+              _this4.providerPromise = undefined;
+              Fliplet.Widget.resetSaveButtonLabel();
+
+              _this4.initProvider();
+            }
+
+            resolve(_this4.value);
+          });
         });
       });
     },
