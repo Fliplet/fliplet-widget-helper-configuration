@@ -2115,14 +2115,18 @@ var render = function () {
                                               staticClass: "fa fa-circle",
                                             }),
                                           ]),
-                                          _vm._v(
-                                            " " +
-                                              _vm._s(
-                                                option.label || option.value
-                                              ) +
-                                              "\n            "
-                                          ),
-                                        ]
+                                          _vm._v(" "),
+                                          option.label
+                                            ? _c("span", {
+                                                domProps: {
+                                                  innerHTML: _vm._s(
+                                                    option.label
+                                                  ),
+                                                },
+                                              })
+                                            : [_vm._v(_vm._s(option.value))],
+                                        ],
+                                        2
                                       ),
                                     ]
                                   )
@@ -2202,14 +2206,18 @@ var render = function () {
                                               staticClass: "fa fa-check",
                                             }),
                                           ]),
-                                          _vm._v(
-                                            " " +
-                                              _vm._s(
-                                                option.label || option.value
-                                              ) +
-                                              "\n            "
-                                          ),
-                                        ]
+                                          _vm._v(" "),
+                                          option.label
+                                            ? _c("span", {
+                                                domProps: {
+                                                  innerHTML: _vm._s(
+                                                    option.label
+                                                  ),
+                                                },
+                                              })
+                                            : [_vm._v(_vm._s(option.value))],
+                                        ],
+                                        2
                                       ),
                                     ]
                                   )
@@ -2355,11 +2363,12 @@ var render = function () {
                                             staticClass: "fa fa-check",
                                           }),
                                         ]),
-                                        _vm._v(
-                                          " " +
-                                            _vm._s(_vm.toggleLabel) +
-                                            "\n            "
-                                        ),
+                                        _vm._v(" "),
+                                        _c("span", {
+                                          domProps: {
+                                            innerHTML: _vm._s(_vm.toggleLabel),
+                                          },
+                                        }),
                                       ]
                                     ),
                                   ]
