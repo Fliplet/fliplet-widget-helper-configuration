@@ -29,7 +29,7 @@
 .form-group:last-child {
   border-bottom: 0;
 }
-.form-group[data-type=html], .form-group[data-type=hidden] {
+.form-group[data-type=html], .form-group[data-type=hidden], .form-group[data-type=provider] {
   margin-bottom: 0;
 }
 .form-group.has-error {
@@ -110,7 +110,7 @@
   top: 0;
   right: 0;
   opacity: 0;
-  color: #E60000;
+  color: #e60000;
   width: 38px;
   height: 38px;
   line-height: 38px;
