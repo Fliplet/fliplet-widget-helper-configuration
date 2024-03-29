@@ -62,7 +62,9 @@
             <div v-bind:key="optionIndex" v-for="(option, optionIndex) in options" class="radio radio-icon">
               <input :name="fieldName" :id="fieldName + '_' + optionIndex" type="radio" :value="option.value" v-model="value">
               <label :for="fieldName + '_' + optionIndex">
-                <span class="check"><i class="fa fa-circle"></i></span> <span v-if="option.label" v-html="option.label"></span><template v-else>{{ option.value }}</template>
+                <span class="check"><i class="fa fa-circle"></i></span>
+                <span v-if="option.label" v-html="option.label"></span>
+                <template v-else>{{ option.value }}</template>
               </label>
             </div>
           </template>
@@ -70,7 +72,9 @@
             <div v-bind:key="optionIndex" v-for="(option, optionIndex) in options" class="checkbox checkbox-icon">
               <input :name="fieldName" :id="fieldName + '_' + optionIndex" type="checkbox" :value="option.value" v-model="value">
               <label :for="fieldName + '_' + optionIndex">
-                <span class="check"><i class="fa fa-check"></i></span> <span v-if="option.label" v-html="option.label"></span><template v-else>{{ option.value }}</template>
+                <span class="check"><i class="fa fa-check"></i></span>
+                <span v-if="option.label" v-html="option.label"></span>
+                <template v-else>{{ option.value }}</template>
               </label>
             </div>
           </template>
@@ -447,9 +451,9 @@ export default {
       }
 
       this.provider = Fliplet.Widget.open(this.package, {
-        selector: target ? target[0] : undefined,
+        selector: target?.[0],
         data,
-        onEvent: onEvent
+        onEvent
       });
 
       // Set provider property against the field
