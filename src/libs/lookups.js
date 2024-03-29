@@ -1,7 +1,7 @@
 const data = Fliplet.Widget.getData();
 const instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
 const instanceId = _.get(data, 'instanceId', '');
-let fieldInstances = {};
+let fieldInstances = [];
 
 /**
  * Returns a boolean indicating whether a nested helper instance matches a filter
