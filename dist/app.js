@@ -2351,6 +2351,7 @@ VeeValidate.extend('required', {
         // Expand this item
         $target.closest('.panel').find('.panel-collapse').collapse('show');
         $target.addClass('fa-chevron-down').removeClass('fa-chevron-right');
+        this.scrollToAccordionByIndex($field.find('.panel-heading').index($target.closest('.panel-heading')));
       }
     },
     onToggleAccordion: function onToggleAccordion(event) {
