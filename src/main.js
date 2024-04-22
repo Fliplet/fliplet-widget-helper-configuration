@@ -118,21 +118,21 @@ function initializeInterface() {
     }
   }
 
+  const fieldData = typeof data.instanceId === 'string' ? data.fields : data;
+
   fields.forEach((field) => {
-    field.value = _.get((typeof data.instanceId === 'string' ? data.fields : data), field.name, field.default);
+    field.value = _.get(fieldData, field.name, field.default);
 
     if (field.type === 'list') {
-      if (field.value && field.value.length) {
-        field.value = field.value.map((item) => {
-          const list = JSON.parse(JSON.stringify(field.fields));
+      field.value = (field.value || []).map((item) => {
+        const list = field.fields;
 
-          list.forEach((listItem) => {
-            listItem.value = item[listItem.name];
-          });
-
-          return list;
+        list.forEach((listItem) => {
+          listItem.value = _.get(item, listItem.name, listItem.default);
         });
-      }
+
+        return list;
+      });
     }
 
     // Normalize options
@@ -165,12 +165,12 @@ function initializeInterface() {
     }
   });
 
-  return (new Vue({
+  return new Vue({
     el: '#helper-configuration',
     render: (createElement) => {
       return createElement(Application);
     }
-  }));
+  });
 }
 
 /**

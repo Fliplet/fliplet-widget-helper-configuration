@@ -235,18 +235,17 @@ function initializeInterface() {
       }
     }
   }
+  var fieldData = typeof data.instanceId === 'string' ? data.fields : data;
   fields.forEach(function (field) {
-    field.value = _.get(typeof data.instanceId === 'string' ? data.fields : data, field.name, field["default"]);
+    field.value = _.get(fieldData, field.name, field["default"]);
     if (field.type === 'list') {
-      if (field.value && field.value.length) {
-        field.value = field.value.map(function (item) {
-          var list = JSON.parse(JSON.stringify(field.fields));
-          list.forEach(function (listItem) {
-            listItem.value = item[listItem.name];
-          });
-          return list;
+      field.value = (field.value || []).map(function (item) {
+        var list = field.fields;
+        list.forEach(function (listItem) {
+          listItem.value = _.get(item, listItem.name, listItem["default"]);
         });
-      }
+        return list;
+      });
     }
 
     // Normalize options
@@ -265,7 +264,6 @@ function initializeInterface() {
     }
   });
   Vue.filter('panelHeading', function (fields, name) {
-    // TODO: This can be updated to use other syntax
     var field = _.find(fields, {
       name: name
     }) || _.first(fields);
@@ -327,7 +325,7 @@ module.exports = _typeof, module.exports.__esModule = true, module.exports["defa
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Application_vue_vue_type_template_id_44b1e432__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3);
 /* harmony import */ var _Application_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5);
-/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(17);
+/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(23);
 
 
 
@@ -553,13 +551,13 @@ __webpack_require__.r(__webpack_exports__);
     findOne: _libs_lookups__WEBPACK_IMPORTED_MODULE_4__["findOne"],
     children: _libs_lookups__WEBPACK_IMPORTED_MODULE_4__["findChildren"],
     onUpdateValue: function onUpdateValue(name, value) {
-      this.fields[name] = value;
       var field = _.find(this.configuration.fields, {
         name: name
       });
       if (!field) {
         return;
       }
+      this.fields[name] = value;
       field.value = value;
     },
     onSubmit: function onSubmit(valid) {
@@ -586,8 +584,9 @@ __webpack_require__.r(__webpack_exports__);
             case 4:
               _context.next = 6;
               return Promise.all(_this.$refs.fieldInstances.map(function (field) {
+                // Don't submit hidden fields
                 if (field.show === false) {
-                  delete _this.fields[field.name];
+                  _this.fields[field.name] = null;
                   return;
                 }
                 return field.onSubmit();
@@ -1071,7 +1070,7 @@ bus.callbacks = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Field_vue_vue_type_template_id_3a2f7ffa__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(12);
 /* harmony import */ var _Field_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
-/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(17);
+/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(23);
 
 
 
@@ -1794,9 +1793,27 @@ var render = function () {
                                         },
                                       },
                                       [
-                                        _c("option", { attrs: { value: "" } }, [
-                                          _vm._v("-- Select an option"),
-                                        ]),
+                                        typeof _vm.placeholder === "string"
+                                          ? _c(
+                                              "option",
+                                              {
+                                                attrs: {
+                                                  value: "",
+                                                  disabled:
+                                                    _vm.required &&
+                                                    typeof _vm.placeholder ===
+                                                      "string",
+                                                },
+                                              },
+                                              [_vm._v(_vm._s(_vm.placeholder))]
+                                            )
+                                          : _vm.placeholder !== false
+                                          ? _c(
+                                              "option",
+                                              { attrs: { value: "" } },
+                                              [_vm._v("-- Select an option")]
+                                            )
+                                          : _vm._e(),
                                         _vm._v(" "),
                                         _vm._l(_vm.options, function (option) {
                                           return _c(
@@ -2106,6 +2123,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 
@@ -2193,16 +2211,22 @@ VeeValidate.extend('required', {
         rules[name] = true;
       }
       return rules;
+    },
+    $parentList: function $parentList() {
+      if (this.listName) {
+        return this.$parent.$parent.$parent;
+      }
     }
   },
   watch: {
-    value: function value(newValue) {
+    value: function value(newValue, oldValue) {
       // This field is used in a list
       if (this.listName) {
-        _.find(this.$parent.$parent.$parent.value[this.index], {
+        _.find(this.$parentList.value[this.index], {
           name: this.name
         }).value = newValue;
-        this.$parent.$parent.$parent.onListValueChanged(this.name);
+        this.$parentList.onListValueChanged(this.name);
+        this.onValueChange(newValue, oldValue);
         return;
       }
       this.updateParentValue(newValue);
@@ -2211,10 +2235,7 @@ VeeValidate.extend('required', {
       if (this.type === 'list') {
         this.$refs.provider.validate(newValue);
       }
-      if (this.change) {
-        var change = typeof this.change === 'function' ? this.change : new Function(this.change)();
-        change.call(this, newValue);
-      }
+      this.onValueChange(newValue, oldValue);
     }
   },
   methods: {
@@ -2239,6 +2260,13 @@ VeeValidate.extend('required', {
         this.$forceUpdate();
       }
     },
+    onValueChange: function onValueChange(newValue, oldValue) {
+      if (!this.change) {
+        return;
+      }
+      var change = typeof this.change === 'function' ? this.change : new Function(this.change)();
+      change.call(this, newValue, oldValue);
+    },
     onSubmit: function onSubmit() {
       var _this = this;
       return _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.mark(function _callee() {
@@ -2246,7 +2274,7 @@ VeeValidate.extend('required', {
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_2___default.a.wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
-              if (!_this.$refs.fieldInstances) {
+              if (!(_this.type === 'list' && _this.$refs.fieldInstances)) {
                 _context.next = 5;
                 break;
               }
@@ -2262,6 +2290,9 @@ VeeValidate.extend('required', {
               newValue = _this.value.map(function (fields) {
                 var obj = {};
                 fields.forEach(function (field) {
+                  if (field.show === false) {
+                    return;
+                  }
                   obj[field.name] = typeof field.value !== 'undefined' ? field.value : field["default"];
                 });
                 return obj;
@@ -2272,7 +2303,7 @@ VeeValidate.extend('required', {
                 _context.next = 7;
                 break;
               }
-              return _context.abrupt("return", Promise.resolve(_this.value));
+              return _context.abrupt("return", Promise.resolve(_this.show !== false ? _this.value : null));
             case 7:
               _this.provider.forwardSaveRequest();
               return _context.abrupt("return", _this.providerPromise);
@@ -2294,10 +2325,25 @@ VeeValidate.extend('required', {
     allAccordionsCollapsed: function allAccordionsCollapsed($context) {
       return !$context.find(':not(.panel-group) .panel-heading .fa-chevron-down').length;
     },
-    onToggleAccordion: function onToggleAccordion(event) {
-      var $target = $(event.target).parent().find('.chevron');
+    toggleAccordionByIndex: function toggleAccordionByIndex(index) {
+      var _this$$el$querySelect;
+      this.toggleAccordion((_this$$el$querySelect = this.$el.querySelectorAll('.panel-heading')[index]) === null || _this$$el$querySelect === void 0 ? void 0 : _this$$el$querySelect.querySelector('.panel-title-text'));
+    },
+    scrollToAccordionByIndex: function scrollToAccordionByIndex(index) {
+      var $accordion = $(this.$el.querySelectorAll('.panel-heading')[index]);
+      if (!$accordion.length) {
+        return;
+      }
+      $('html, body').stop().animate({
+        scrollTop: $accordion.offset().top
+      }, {
+        duration: 200
+      });
+    },
+    toggleAccordion: function toggleAccordion(target) {
+      var $target = $(target).parent().find('.chevron');
       var isExpanded = $target.hasClass('fa-chevron-down');
-      var $field = $(event.target).closest('.list-field');
+      var $field = $(target).closest('.list-field');
 
       // Close other items
       this.collapseAccordions($field);
@@ -2306,6 +2352,9 @@ VeeValidate.extend('required', {
         $target.closest('.panel').find('.panel-collapse').collapse('show');
         $target.addClass('fa-chevron-down').removeClass('fa-chevron-right');
       }
+    },
+    onToggleAccordion: function onToggleAccordion(event) {
+      this.toggleAccordion(event.target);
     },
     onToggleAccordions: function onToggleAccordions(event) {
       var $field = $(event.target).closest('.list-field');
@@ -2319,11 +2368,16 @@ VeeValidate.extend('required', {
       this.value.splice(index, 1);
     },
     addItem: function addItem() {
+      var _this2 = this;
       if (!Array.isArray(this.value)) {
         this.$set(this, 'value', []);
       }
-      var item = JSON.parse(JSON.stringify(this.fields));
+      var item = _.cloneDeep(this.fields);
       this.value.push(item);
+      this.$nextTick(function () {
+        _this2.toggleAccordionByIndex(_this2.value.length - 1);
+        _this2.scrollToAccordionByIndex(_this2.value.length - 1);
+      });
     },
     onStart: function onStart(event) {
       this.collapseAccordions($(event.target));
@@ -2335,17 +2389,17 @@ VeeValidate.extend('required', {
       }));
     },
     onSort: function onSort(event) {
-      var _this2 = this;
+      var _this3 = this;
       // Briefly hide the sortable panel to fix this issue
       // https://github.com/sagalbot/vue-sortable/issues/27#issuecomment-350014812
       this.panelIsVisible = false;
       this.value.splice(event.newIndex, 0, this.value.splice(event.oldIndex, 1)[0]);
       this.$nextTick(function () {
-        _this2.panelIsVisible = true;
+        _this3.panelIsVisible = true;
       });
     },
     initProvider: function initProvider() {
-      var _this3 = this;
+      var _this4 = this;
       if (this.type !== 'provider') {
         return;
       }
@@ -2359,9 +2413,9 @@ VeeValidate.extend('required', {
         }
         $provider.find('[data-open-provider]').click(function (event) {
           event.preventDefault();
-          _this3.openProvider();
+          _this4.openProvider();
           Fliplet.Widget.setSaveButtonLabel('Save');
-          window.currentProvider = _this3.provider;
+          window.currentProvider = _this4.provider;
         });
         this.eventsBound = true;
         return;
@@ -2369,7 +2423,7 @@ VeeValidate.extend('required', {
       this.openProvider($provider);
     },
     openProvider: function openProvider(target) {
-      var _this4 = this;
+      var _this5 = this;
       var value = this.value || {};
       var data = typeof this.data === 'function' ? this.data.bind(this).call(this, value) : this.data;
 
@@ -2407,7 +2461,7 @@ VeeValidate.extend('required', {
       // Set provider property against the field
       this.setFieldProperty(this.name, 'provider', this.provider);
       this.providerPromise = new Promise(function (resolve) {
-        _this4.provider.then(function (result) {
+        _this5.provider.then(function (result) {
           var value;
           if (_.isObject(result.data) && !Array.isArray(result.data)) {
             value = _.omit(result.data, ['package', 'version']);
@@ -2415,32 +2469,32 @@ VeeValidate.extend('required', {
             value = result.data;
           }
           var beforeSave;
-          if (typeof _this4.beforeSave === 'function') {
-            beforeSave = _this4.beforeSave.bind(_this4).call(_this4, value);
+          if (typeof _this5.beforeSave === 'function') {
+            beforeSave = _this5.beforeSave.bind(_this5).call(_this5, value);
           } else {
             beforeSave = Promise.resolve(value);
           }
           Promise.resolve(beforeSave).then(function (result) {
-            _this4.$set(_this4, 'value', result);
-            if (_this4.isFullScreenProvider) {
+            _this5.$set(_this5, 'value', result);
+            if (_this5.isFullScreenProvider) {
               delete window.currentProvider;
-              delete _this4.provider;
-              _this4.setFieldProperty(_this4.name, 'provider', null);
-              _this4.providerPromise = undefined;
+              delete _this5.provider;
+              _this5.setFieldProperty(_this5.name, 'provider', null);
+              _this5.providerPromise = undefined;
               Fliplet.Widget.resetSaveButtonLabel();
-              _this4.initProvider();
+              _this5.initProvider();
             }
-            resolve(_this4.value);
+            resolve(_this5.show !== false ? _this5.value : undefined);
           });
         });
       });
     },
     normalizeOptions: function normalizeOptions() {
-      var _this5 = this;
+      var _this6 = this;
       if (['radio', 'checkbox', 'dropdown'].indexOf(this.type) > -1) {
         _.forEach(this.options, function (option, i) {
           if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(option) !== 'object') {
-            _this5.options[i] = {
+            _this6.options[i] = {
               value: option
             };
           }
@@ -2449,22 +2503,41 @@ VeeValidate.extend('required', {
     }
   },
   mounted: function mounted() {
+    var _this7 = this;
     this.initProvider();
     this.normalizeOptions();
+    var waitForAccordion = new Promise(function (resolve) {
+      if (!_this7.listName) {
+        return resolve();
+      }
+
+      // Wait for accordion to be initialized
+      setTimeout(function () {
+        resolve();
+      }, 100);
+    });
 
     // Ensure model-less values are synced with the validation provider
     if (this.type === 'list') {
       this.$refs.provider.syncValue(this.value);
-    } else if (this.type === 'dropdown' && typeof this.value === 'undefined') {
-      this.value = '';
+    } else if (['dropdown', 'radio'].includes(this.type) && typeof this.value === 'undefined') {
+      return waitForAccordion.then(function () {
+        _this7.$set(_this7, 'value', _this7["default"] || '');
+      });
     } else if (this.type === 'checkbox' && !Array.isArray(this.value)) {
-      this.$set(this, 'value', _.compact([this.value]));
+      return waitForAccordion.then(function () {
+        _this7.$set(_this7, 'value', _.compact([_this7.value]));
+      });
     }
     if (this.ready) {
       var ready = typeof this.ready === 'function' ? this.ready : new Function(this.ready)();
       ready.call(this, this.$el, this.value, this.provider);
     }
-    this.updateParentValue(this.value);
+
+    // This field is used in a list
+    if (!this.listName) {
+      this.updateParentValue(this.value);
+    }
   }
 });
 
@@ -2479,6 +2552,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findChildren", function() { return findChildren; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerFields", function() { return registerFields; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setFieldProperty", function() { return setFieldProperty; });
+/* harmony import */ var _class_field__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
+
 var data = Fliplet.Widget.getData();
 var instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
 var instanceId = _.get(data, 'instanceId', '');
@@ -2596,38 +2671,208 @@ Fliplet.Helper.field = function (name) {
   var field = _.find(fieldInstances, {
     name: name
   });
-  if (!field) {
-    return;
-  }
-  var instance = {
-    toggle: function toggle(show) {
-      if (typeof field.show === 'undefined') {
-        Vue.set(field, 'show', true);
-      }
-      if (typeof show === 'undefined') {
-        field.show = !field.show;
-        return;
-      }
-      field.show = !!show;
-    },
-    get: function get() {
-      return field.value;
-    },
-    set: function set(value) {
-      field.value = value;
-      if (field.provider) {
-        field.provider.emit('set-data', value);
-      }
-    }
-  };
-  if (field.type === 'provider') {
-    instance.provider = field.provider;
-  }
-  return instance;
+  return new _class_field__WEBPACK_IMPORTED_MODULE_0__["Field"](field);
 };
 
 /***/ }),
 /* 17 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Field", function() { return Field; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(19);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _fieldList__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
+
+
+function _classPrivateMethodInitSpec(obj, privateSet) { _checkPrivateRedeclaration(obj, privateSet); privateSet.add(obj); }
+function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
+function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
+function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
+function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), r), r; }
+function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
+
+var _field = /*#__PURE__*/new WeakMap();
+var _Field_brand = /*#__PURE__*/new WeakSet();
+var Field = /*#__PURE__*/function () {
+  function Field(_field2) {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, Field);
+    _classPrivateMethodInitSpec(this, _Field_brand);
+    _classPrivateFieldInitSpec(this, _field, null);
+    _assertClassBrand(_Field_brand, this, _setField).call(this, _field2);
+  }
+  return _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(Field, [{
+    key: "isShown",
+    value: function isShown() {
+      return _classPrivateFieldGet(_field, this).show !== false;
+    }
+  }, {
+    key: "toggle",
+    value: function toggle(show) {
+      if (!_classPrivateFieldGet(_field, this)) {
+        return;
+      }
+      if (typeof _classPrivateFieldGet(_field, this).show === 'undefined') {
+        Vue.set(_classPrivateFieldGet(_field, this), 'show', true);
+      }
+      if (typeof show === 'undefined') {
+        _classPrivateFieldGet(_field, this).show = !_classPrivateFieldGet(_field, this).show;
+        return;
+      }
+      _classPrivateFieldGet(_field, this).show = !!show;
+    }
+  }, {
+    key: "get",
+    value: function get(index) {
+      if (!_classPrivateFieldGet(_field, this)) {
+        return;
+      }
+      if (_classPrivateFieldGet(_field, this).type === 'list' && typeof index !== 'undefined') {
+        return new _fieldList__WEBPACK_IMPORTED_MODULE_2__["FieldList"](_classPrivateFieldGet(_field, this).value[index]);
+      }
+      return _classPrivateFieldGet(_field, this).value;
+    }
+  }, {
+    key: "set",
+    value: function set(value) {
+      if (!_classPrivateFieldGet(_field, this)) {
+        return;
+      }
+      _classPrivateFieldGet(_field, this).value = value;
+      if (_classPrivateFieldGet(_field, this).provider) {
+        _classPrivateFieldGet(_field, this).provider.emit('set-data', value);
+      }
+    }
+  }, {
+    key: "setOptions",
+    value: function setOptions(options) {
+      if (!_classPrivateFieldGet(_field, this)) {
+        return;
+      }
+      if (!['dropdown', 'radio', 'checkbox'].includes(_classPrivateFieldGet(_field, this).type)) {
+        throw new Error('Field type must be dropdown, radio or checkbox');
+      }
+      Vue.set(_classPrivateFieldGet(_field, this), 'options', options);
+    }
+  }]);
+}();
+function _setField(field) {
+  _classPrivateFieldSet(_field, this, field);
+}
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports) {
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+module.exports = _classCallCheck, module.exports.__esModule = true, module.exports["default"] = module.exports;
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var toPropertyKey = __webpack_require__(20);
+function _defineProperties(target, props) {
+  for (var i = 0; i < props.length; i++) {
+    var descriptor = props[i];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor) descriptor.writable = true;
+    Object.defineProperty(target, toPropertyKey(descriptor.key), descriptor);
+  }
+}
+function _createClass(Constructor, protoProps, staticProps) {
+  if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+  if (staticProps) _defineProperties(Constructor, staticProps);
+  Object.defineProperty(Constructor, "prototype", {
+    writable: false
+  });
+  return Constructor;
+}
+module.exports = _createClass, module.exports.__esModule = true, module.exports["default"] = module.exports;
+
+/***/ }),
+/* 20 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var _typeof = __webpack_require__(1)["default"];
+var toPrimitive = __webpack_require__(21);
+function toPropertyKey(t) {
+  var i = toPrimitive(t, "string");
+  return "symbol" == _typeof(i) ? i : i + "";
+}
+module.exports = toPropertyKey, module.exports.__esModule = true, module.exports["default"] = module.exports;
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var _typeof = __webpack_require__(1)["default"];
+function toPrimitive(t, r) {
+  if ("object" != _typeof(t) || !t) return t;
+  var e = t[Symbol.toPrimitive];
+  if (void 0 !== e) {
+    var i = e.call(t, r || "default");
+    if ("object" != _typeof(i)) return i;
+    throw new TypeError("@@toPrimitive must return a primitive value.");
+  }
+  return ("string" === r ? String : Number)(t);
+}
+module.exports = toPrimitive, module.exports.__esModule = true, module.exports["default"] = module.exports;
+
+/***/ }),
+/* 22 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FieldList", function() { return FieldList; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(18);
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(19);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _field__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(17);
+
+
+function _classPrivateMethodInitSpec(obj, privateSet) { _checkPrivateRedeclaration(obj, privateSet); privateSet.add(obj); }
+function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
+function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
+function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
+function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), r), r; }
+function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
+
+var _fieldList = /*#__PURE__*/new WeakMap();
+var _FieldList_brand = /*#__PURE__*/new WeakSet();
+var FieldList = /*#__PURE__*/function () {
+  function FieldList(_fieldList2) {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, FieldList);
+    _classPrivateMethodInitSpec(this, _FieldList_brand);
+    _classPrivateFieldInitSpec(this, _fieldList, null);
+    _assertClassBrand(_FieldList_brand, this, _setFieldList).call(this, _fieldList2);
+  }
+  return _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(FieldList, [{
+    key: "field",
+    value: function field(name) {
+      var field = _.find(_classPrivateFieldGet(_fieldList, this), {
+        name: name
+      });
+      return new _field__WEBPACK_IMPORTED_MODULE_2__["Field"](field);
+    }
+  }]);
+}();
+function _setFieldList(fieldList) {
+  _classPrivateFieldSet(_fieldList, this, fieldList);
+}
+
+/***/ }),
+/* 23 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

@@ -81,7 +81,8 @@
           <template v-if="options && type === 'dropdown'">
             <label :for="fieldName" class="select-proxy-display">
               <select :id="fieldName" class="hidden-select form-control" v-model="value">
-                <option value="">-- Select an option</option>
+                <option value="" v-if="typeof placeholder === 'string'" :disabled="required && typeof placeholder === 'string'">{{ placeholder }}</option>
+                <option value="" v-else-if="placeholder !== false">-- Select an option</option>
                 <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label || option.value }}</option>
               </select>
               <span class="icon fa fa-chevron-down"></span>
@@ -238,15 +239,22 @@ export default {
       }
 
       return rules;
+    },
+    $parentList() {
+      if (this.listName) {
+        return this.$parent.$parent.$parent;
+      }
     }
   },
   watch: {
-    value(newValue) {
+    value(newValue, oldValue) {
       // This field is used in a list
       if (this.listName) {
-        _.find(this.$parent.$parent.$parent.value[this.index], { name: this.name }).value = newValue;
+        _.find(this.$parentList.value[this.index], { name: this.name }).value = newValue;
 
-        this.$parent.$parent.$parent.onListValueChanged(this.name);
+        this.$parentList.onListValueChanged(this.name);
+
+        this.onValueChange(newValue, oldValue);
 
         return;
       }
@@ -258,13 +266,7 @@ export default {
         this.$refs.provider.validate(newValue);
       }
 
-      if (this.change) {
-        const change = typeof this.change === 'function'
-          ? this.change
-          : new Function(this.change)();
-
-        change.call(this, newValue);
-      }
+      this.onValueChange(newValue, oldValue);
     }
   },
   methods: {
@@ -291,8 +293,19 @@ export default {
         this.$forceUpdate();
       }
     },
+    onValueChange(newValue, oldValue) {
+      if (!this.change) {
+        return;
+      }
+
+      const change = typeof this.change === 'function'
+        ? this.change
+        : new Function(this.change)();
+
+      change.call(this, newValue, oldValue);
+    },
     async onSubmit() {
-      if (this.$refs.fieldInstances) {
+      if (this.type === 'list' && this.$refs.fieldInstances) {
         await Promise.all(this.$refs.fieldInstances.map((field) => {
           return field.onSubmit().then((result) => {
             _.find(this.value[field.index], { name: field.name }).value = result;
@@ -303,6 +316,10 @@ export default {
           const obj = {};
 
           fields.forEach((field) => {
+            if (field.show === false) {
+              return;
+            }
+
             obj[field.name] = typeof field.value !== 'undefined' ? field.value : field.default;
           });
 
@@ -313,7 +330,7 @@ export default {
       }
 
       if (!this.providerPromise) {
-        return Promise.resolve(this.value);
+        return Promise.resolve(this.show !== false ? this.value: null);
       }
 
       this.provider.forwardSaveRequest();
@@ -331,10 +348,26 @@ export default {
     allAccordionsCollapsed($context) {
       return !$context.find(':not(.panel-group) .panel-heading .fa-chevron-down').length;
     },
-    onToggleAccordion(event) {
-      const $target = $(event.target).parent().find('.chevron');
+    toggleAccordionByIndex(index) {
+      this.toggleAccordion(this.$el.querySelectorAll('.panel-heading')[index]?.querySelector('.panel-title-text'));
+    },
+    scrollToAccordionByIndex(index) {
+      const $accordion = $(this.$el.querySelectorAll('.panel-heading')[index]);
+
+      if (!$accordion.length) {
+        return;
+      }
+
+      $('html, body').stop().animate({
+        scrollTop: $accordion.offset().top
+      }, {
+        duration: 200
+      });
+    },
+    toggleAccordion(target) {
+      const $target = $(target).parent().find('.chevron');
       const isExpanded = $target.hasClass('fa-chevron-down');
-      const $field = $(event.target).closest('.list-field');
+      const $field = $(target).closest('.list-field');
 
       // Close other items
       this.collapseAccordions($field);
@@ -344,6 +377,9 @@ export default {
         $target.closest('.panel').find('.panel-collapse').collapse('show');
         $target.addClass('fa-chevron-down').removeClass('fa-chevron-right');
       }
+    },
+    onToggleAccordion(event) {
+      this.toggleAccordion(event.target);
     },
     onToggleAccordions(event) {
       const $field = $(event.target).closest('.list-field');
@@ -362,9 +398,14 @@ export default {
         this.$set(this, 'value', []);
       }
 
-      const item = JSON.parse(JSON.stringify(this.fields));
+      const item = _.cloneDeep(this.fields);
 
       this.value.push(item);
+
+      this.$nextTick(() => {
+        this.toggleAccordionByIndex(this.value.length - 1);
+        this.scrollToAccordionByIndex(this.value.length - 1);
+      });
     },
     onStart(event) {
       this.collapseAccordions($(event.target));
@@ -494,7 +535,7 @@ export default {
               this.initProvider();
             }
 
-            resolve(this.value);
+            resolve(this.show !== false ? this.value : undefined);
           });
         });
       });
@@ -515,13 +556,28 @@ export default {
     this.initProvider();
     this.normalizeOptions();
 
+    const waitForAccordion = new Promise(resolve => {
+      if (!this.listName) {
+        return resolve();
+      }
+
+      // Wait for accordion to be initialized
+      setTimeout(() => {
+        resolve();
+      }, 100);
+    });
+
     // Ensure model-less values are synced with the validation provider
     if (this.type === 'list') {
       this.$refs.provider.syncValue(this.value);
-    } else if (this.type === 'dropdown' && typeof this.value === 'undefined') {
-      this.value = '';
+    } else if (['dropdown', 'radio'].includes(this.type) && typeof this.value === 'undefined') {
+      return waitForAccordion.then(() => {
+        this.$set(this, 'value', this.default || '');
+      });
     } else if (this.type === 'checkbox' && !Array.isArray(this.value)) {
-      this.$set(this, 'value', _.compact([this.value]));
+      return waitForAccordion.then(() => {
+        this.$set(this, 'value', _.compact([this.value]));
+      });
     }
 
     if (this.ready) {
@@ -532,7 +588,10 @@ export default {
       ready.call(this, this.$el, this.value, this.provider);
     }
 
-    this.updateParentValue(this.value);
+    // This field is used in a list
+    if (!this.listName) {
+      this.updateParentValue(this.value);
+    }
   }
 };
 </script>

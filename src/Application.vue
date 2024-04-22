@@ -52,14 +52,13 @@ export default {
     findOne: findOne,
     children: findChildren,
     onUpdateValue(name, value) {
-      this.fields[name] = value;
-
       const field = _.find(this.configuration.fields, { name });
 
       if (!field) {
         return;
       }
 
+      this.fields[name] = value;
       field.value = value;
     },
     async onSubmit(valid) {
@@ -82,8 +81,9 @@ export default {
       var beforeSave;
 
       await Promise.all(this.$refs.fieldInstances.map((field) => {
+        // Don't submit hidden fields
         if (field.show === false) {
-          delete this.fields[field.name];
+          this.fields[field.name] = null;
 
           return;
         }

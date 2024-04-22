@@ -1,3 +1,5 @@
+import { Field } from '../class/field';
+
 const data = Fliplet.Widget.getData();
 const instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
 const instanceId = _.get(data, 'instanceId', '');
@@ -125,41 +127,7 @@ Fliplet.Helper.findOne = function(predicate) {
 };
 
 Fliplet.Helper.field = function(name) {
-  const field = _.find(fieldInstances, { name: name });
+  const field = _.find(fieldInstances, { name });
 
-  if (!field) {
-    return;
-  }
-
-  const instance = {
-    toggle: function(show) {
-      if (typeof field.show === 'undefined') {
-        Vue.set(field, 'show', true);
-      }
-
-      if (typeof show === 'undefined') {
-        field.show = !field.show;
-
-        return;
-      }
-
-      field.show = !!show;
-    },
-    get: function() {
-      return field.value;
-    },
-    set: function(value) {
-      field.value = value;
-
-      if (field.provider) {
-        field.provider.emit('set-data', value);
-      }
-    }
-  };
-
-  if (field.type === 'provider') {
-    instance.provider = field.provider;
-  }
-
-  return instance;
+  return new Field(field);
 };
