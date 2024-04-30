@@ -39,6 +39,15 @@
     margin-bottom: 0;
   }
 
+  &[data-type="hr"] hr {
+    margin: 0;
+    border-top: 1px solid rgba(51, 51, 51, 0.1);
+  }
+
+  &[data-type="textarea"] textarea {
+    resize: vertical;
+  }
+
   &.has-error {
     margin-bottom: -5px;
 

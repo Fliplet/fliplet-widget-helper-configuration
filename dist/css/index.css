@@ -32,6 +32,13 @@
 .form-group[data-type=html], .form-group[data-type=hidden], .form-group[data-type=provider] {
   margin-bottom: 0;
 }
+.form-group[data-type=hr] hr {
+  margin: 0;
+  border-top: 1px solid rgba(51, 51, 51, 0.1);
+}
+.form-group[data-type=textarea] textarea {
+  resize: vertical;
+}
 .form-group.has-error {
   margin-bottom: -5px;
 }

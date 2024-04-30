@@ -1169,6 +1169,8 @@ var render = function () {
                         },
                       },
                     })
+                  : _vm.type === "hr"
+                  ? _c("hr")
                   : [
                       _c("div", { staticClass: "col-sm-4 control-label" }, [
                         _vm.label
@@ -2139,6 +2141,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 
@@ -2451,6 +2454,15 @@ VeeValidate.extend('required', {
       var _this5 = this;
       var value = this.value || {};
       var data = typeof this.data === 'function' ? this.data.bind(this).call(this, value) : this.data;
+
+      // Allow data to be a promise and resolve it before opening the provider
+      if (data instanceof Promise) {
+        data.then(function (result) {
+          _this5.data = result;
+          _this5.openProvider(target);
+        });
+        return;
+      }
 
       // File picker wants a slightly different input from the original output
       if (this["package"] === 'com.fliplet.file-picker' && Array.isArray(value)) {

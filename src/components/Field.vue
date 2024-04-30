@@ -11,6 +11,7 @@
       :data-field="name"
       :data-type="type">
       <input v-if="type === 'hidden'" type="hidden" v-model="value" />
+      <hr v-else-if="type === 'hr'" />
       <template v-else>
         <div class="col-sm-4 control-label">
           <label v-if="label">{{ label }}</label>
@@ -473,6 +474,16 @@ export default {
       let data = typeof this.data === 'function'
         ? this.data.bind(this).call(this, value)
         : this.data;
+
+      // Allow data to be a promise and resolve it before opening the provider
+      if (data instanceof Promise) {
+        data.then((result) => {
+          this.data = result;
+          this.openProvider(target);
+        });
+
+        return;
+      }
 
       // File picker wants a slightly different input from the original output
       if (this.package === 'com.fliplet.file-picker' && Array.isArray(value)) {
