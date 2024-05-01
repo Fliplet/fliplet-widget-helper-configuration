@@ -240,7 +240,7 @@ function initializeInterface() {
     field.value = _.get(fieldData, field.name, field["default"]);
     if (field.type === 'list') {
       field.value = (field.value || []).map(function (item) {
-        var list = field.fields;
+        var list = _.cloneDeep(field.fields);
         list.forEach(function (listItem) {
           listItem.value = _.get(item, listItem.name, listItem["default"]);
         });

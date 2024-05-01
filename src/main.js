@@ -125,7 +125,7 @@ function initializeInterface() {
 
     if (field.type === 'list') {
       field.value = (field.value || []).map((item) => {
-        const list = field.fields;
+        const list = _.cloneDeep(field.fields);
 
         list.forEach((listItem) => {
           listItem.value = _.get(item, listItem.name, listItem.default);
