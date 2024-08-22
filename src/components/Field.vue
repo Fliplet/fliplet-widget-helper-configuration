@@ -311,6 +311,7 @@ export default {
       change.call(this, newValue, oldValue);
     },
     async onSubmit() {
+      debugger
       if (this.type === 'list' && this.$refs.fieldInstances) {
         await Promise.all(this.$refs.fieldInstances.map((field) => {
           return field.onSubmit().then((result) => {
@@ -440,6 +441,7 @@ export default {
       });
     },
     initProvider() {
+      debugger
       if (this.type !== 'provider') {
         return;
       }
@@ -562,6 +564,7 @@ export default {
       });
     },
     normalizeOptions() {
+      debugger
       if (['radio', 'checkbox', 'dropdown'].indexOf(this.type) > -1) {
         _.forEach(this.options, (option, i) => {
           if (typeof option !== 'object') {
@@ -574,6 +577,7 @@ export default {
     }
   },
   mounted() {
+    debugger
     this.initProvider();
     this.normalizeOptions();
 
