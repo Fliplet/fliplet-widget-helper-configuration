@@ -2484,11 +2484,9 @@ VeeValidate.extend('required', {
       if (this.onEvent) {
         onEvent = typeof this.onEvent === 'function' ? this.onEvent : new Function(this.onEvent)();
       }
-      if (!('data' in this)) {
-        data = _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(value) === 'object'
-        // Normalize Vue objects into plain JSON objects
-        ? JSON.parse(JSON.stringify(value)) : value;
-      }
+      data = _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(value) === 'object'
+      // Normalize Vue objects into plain JSON objects
+      ? JSON.parse(JSON.stringify(value)) : value;
       this.provider = Fliplet.Widget.open(this["package"], {
         selector: target === null || target === void 0 ? void 0 : target[0],
         data: data,
