@@ -505,7 +505,7 @@ export default {
           ? this.onEvent
           : new Function(this.onEvent)();
       }
-
+      debugger
       data = typeof value === 'object'
         // Normalize Vue objects into plain JSON objects
         ? JSON.parse(JSON.stringify(value))
