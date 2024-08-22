@@ -470,6 +470,7 @@ export default {
       this.openProvider($provider);
     },
     openProvider(target) {
+      debugger
       let value = this.value || {};
       let data = typeof this.data === 'function'
         ? this.data.bind(this).call(this, value)
