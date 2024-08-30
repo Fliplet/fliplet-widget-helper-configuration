@@ -506,10 +506,12 @@ export default {
           : new Function(this.onEvent)();
       }
 
-      data = typeof value === 'object'
-        // Normalize Vue objects into plain JSON objects
-        ? JSON.parse(JSON.stringify(value))
-        : value;
+      if (!('data' in this)) {
+        data = typeof value === 'object'
+          // Normalize Vue objects into plain JSON objects
+          ? JSON.parse(JSON.stringify(value))
+          : value;
+      }
 
       this.provider = Fliplet.Widget.open(this.package, {
         selector: target?.[0],
