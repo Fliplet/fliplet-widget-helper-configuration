@@ -506,7 +506,7 @@ export default {
           : new Function(this.onEvent)();
       }
 
-      if (!('data' in this)) {
+      if (typeof data === 'undefined') {
         data = typeof value === 'object'
           // Normalize Vue objects into plain JSON objects
           ? JSON.parse(JSON.stringify(value))

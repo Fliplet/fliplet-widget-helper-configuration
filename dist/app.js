@@ -2484,7 +2484,7 @@ VeeValidate.extend('required', {
       if (this.onEvent) {
         onEvent = typeof this.onEvent === 'function' ? this.onEvent : new Function(this.onEvent)();
       }
-      if (!('data' in this)) {
+      if (typeof data === 'undefined') {
         data = _babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(value) === 'object'
         // Normalize Vue objects into plain JSON objects
         ? JSON.parse(JSON.stringify(value)) : value;
