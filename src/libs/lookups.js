@@ -1,8 +1,8 @@
 import { Field } from '../class/field';
 
 const data = Fliplet.Widget.getData();
-const instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
-const instanceId = _.get(data, 'instanceId', '');
+const instances = Fliplet.Utils.get(data, 'helperInstances') || Fliplet.Utils.get(data, 'widgetInstances') || [];
+const instanceId = Fliplet.Utils.get(data, 'instanceId', '');
 let fieldInstances = [];
 
 /**
@@ -14,7 +14,7 @@ let fieldInstances = [];
 function helperMatches(instance, predicate) {
   return instance.id !== instanceId
     && instance.isChildren
-    && (predicate ? _.find([instance], predicate) : true);
+    && (predicate ? Fliplet.Utils.find([instance], predicate) : true);
 }
 
 /**
@@ -40,7 +40,7 @@ function prepareFilter(predicate) {
 export function findAll(predicate) {
   predicate = prepareFilter(predicate);
 
-  return _.filter(instances, function(instance) {
+  return Fliplet.Utils.filter(instances, function(instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -53,7 +53,7 @@ export function findAll(predicate) {
 export function findOne(predicate) {
   predicate = prepareFilter(predicate);
 
-  return _.find(instances, function(instance) {
+  return Fliplet.Utils.find(instances, function(instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -66,11 +66,11 @@ export function findOne(predicate) {
 export function findChildren(predicate) {
   predicate = prepareFilter(predicate);
 
-  return _.filter(instances, function(instance) {
+  return Fliplet.Utils.filter(instances, function(instance) {
     return instance.id !== instanceId
       && instance.parentId
       && instance.parentId === instanceId
-      && (predicate ? _.find([instance], predicate) : true);
+      && (predicate ? Fliplet.Utils.find([instance], predicate) : true);
   });
 }
 
@@ -83,7 +83,7 @@ export function registerFields(fields) {
 }
 
 export function setFieldProperty(fieldName, prop, value) {
-  const field = _.find(fieldInstances, { name: fieldName });
+  const field = Fliplet.Utils.find(fieldInstances, { name: fieldName });
 
   if (!field) {
     return;
@@ -103,11 +103,11 @@ Fliplet.Helper.find = function(predicate) {
     return Fliplet.API.request({
       url: 'v1/apps/' + Fliplet.Env.get('appId') + '/pages/' + Fliplet.Env.get('pageId') + '/helper-instances'
     }).then(function(response) {
-      return _.filter(response.helpers, predicate);
+      return Fliplet.Utils.filter(response.helpers, predicate);
     });
   }
 
-  return _.filter(instances, prepareFilter(predicate));
+  return Fliplet.Utils.filter(instances, prepareFilter(predicate));
 };
 
 /**
@@ -119,15 +119,15 @@ Fliplet.Helper.findOne = function(predicate) {
   // Allow async find for widget instances
   if (typeof data.id === 'number') {
     return Fliplet.Helper.find(predicate).then(function(results) {
-      return _.first(results);
+      return Fliplet.Utils.first(results);
     });
   }
 
-  return _.find(instances, prepareFilter(predicate));
+  return Fliplet.Utils.find(instances, prepareFilter(predicate));
 };
 
 Fliplet.Helper.field = function(name) {
-  const field = _.find(fieldInstances, { name });
+  const field = Fliplet.Utils.find(fieldInstances, { name });
 
   return new Field(field);
 };

@@ -136,7 +136,7 @@ VeeValidate.extend('required', {
     } else if (Array.isArray(value) || typeof value === 'string') {
       valid = value.length;
     } else if (typeof value === 'object') {
-      valid = !_.isEmpty(value);
+      valid = !Fliplet.Utils.isEmpty(value);
     } else {
       valid = !!value;
     }
@@ -227,8 +227,8 @@ export default {
 
       // Parse rules property to support all the rules supported by vee-validate using object expression
       // https://vee-validate.logaretm.com/v3/advanced/rules-object-expression.html#defining-rules
-      if (typeof this.rules === 'object' && !_.isEmpty(this.rules)) {
-        _.assign(rules, this.rules);
+      if (typeof this.rules === 'object' && !Fliplet.Utils.isEmpty(this.rules)) {
+        Fliplet.Utils.assign(rules, this.rules);
       }
 
       // Use custom validate function as custom validation rule
@@ -256,7 +256,7 @@ export default {
     value(newValue, oldValue) {
       // This field is used in a list
       if (this.listName) {
-        _.find(this.$parentList.value[this.index], { name: this.name }).value = newValue;
+        Fliplet.Utils.find(this.$parentList.value[this.index], { name: this.name }).value = newValue;
 
         this.$parentList.onListValueChanged(this.name);
 
@@ -314,7 +314,7 @@ export default {
       if (this.type === 'list' && this.$refs.fieldInstances) {
         await Promise.all(this.$refs.fieldInstances.map((field) => {
           return field.onSubmit().then((result) => {
-            _.find(this.value[field.index], { name: field.name }).value = result;
+            Fliplet.Utils.find(this.value[field.index], { name: field.name }).value = result;
           });
         }));
 
@@ -406,7 +406,7 @@ export default {
         this.$set(this, 'value', []);
       }
 
-      const item = _.map(this.fields, field => {
+      const item = Fliplet.Utils.map(this.fields, field => {
         return Object.assign({}, field, {
           value: field.default
         });
@@ -490,7 +490,7 @@ export default {
         value = { selectFiles: value };
       } else if (this.package === 'com.fliplet.data-source-provider') {
         // Apply default values to ensure data sources and security rules are correctly managed
-        value = _.assignIn({ appId: Fliplet.Env.get('appId') }, this.default, value);
+        value = Fliplet.Utils.assignIn({ appId: Fliplet.Env.get('appId') }, this.default, value);
 
         // Data source provider wants a slightly different input from the original output
         if (value.id) {
@@ -526,8 +526,8 @@ export default {
         this.provider.then((result) => {
           let value;
 
-          if (_.isObject(result.data) && !Array.isArray(result.data)) {
-            value = _.omit(result.data, [
+          if (Fliplet.Utils.isObject(result.data) && !Array.isArray(result.data)) {
+            value = Fliplet.Utils.omit(result.data, [
               'package', 'version'
             ]);
           } else {
@@ -564,7 +564,7 @@ export default {
     },
     normalizeOptions() {
       if (['radio', 'checkbox', 'dropdown'].indexOf(this.type) > -1) {
-        _.forEach(this.options, (option, i) => {
+        Fliplet.Utils.forEach(this.options, (option, i) => {
           if (typeof option !== 'object') {
             this.options[i] = {
               value: option
@@ -598,7 +598,7 @@ export default {
       });
     } else if (this.type === 'checkbox' && !Array.isArray(this.value)) {
       return waitForAccordion.then(() => {
-        this.$set(this, 'value', _.compact([this.value]));
+        this.$set(this, 'value', Fliplet.Utils.compact([this.value]));
       });
     }
 

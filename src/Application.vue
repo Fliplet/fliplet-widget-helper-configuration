@@ -34,7 +34,7 @@ export default {
     validationObserver: VeeValidate.ValidationObserver
   },
   data() {
-    return _.assign(
+    return Fliplet.Utils.assign(
       {
         fields: {},
         showSubmit: window.parent === window && Fliplet.Env.get('development')
@@ -52,7 +52,7 @@ export default {
     findOne: findOne,
     children: findChildren,
     onUpdateValue(name, value) {
-      const field = _.find(this.configuration.fields, { name });
+      const field = Fliplet.Utils.find(this.configuration.fields, { name });
 
       if (!field) {
         return;
@@ -123,7 +123,7 @@ export default {
           // Silent error
         }
 
-        data = _.omit(data, [
+        data = Fliplet.Utils.omit(data, [
           'id', 'package', 'uuid', 'version'
         ]);
 

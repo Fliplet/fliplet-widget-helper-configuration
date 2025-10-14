@@ -14,6 +14,7 @@
       "lodash",
       "fliplet-core",
       "fliplet-studio-ui",
+      "fliplet-utils",
       "fliplet-helper",
       "jquery-ui",
       "handlebars",
@@ -28,7 +29,7 @@
     ]
   },
   "build": {
-    "dependencies": ["fliplet-core"],
+    "dependencies": ["fliplet-core", "fliplet-utils"],
     "assets": []
   }
 }

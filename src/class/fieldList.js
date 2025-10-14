@@ -12,7 +12,7 @@ export class FieldList {
   }
 
   field(name) {
-    const field = _.find(this.#fieldList, { name });
+    const field = Fliplet.Utils.find(this.#fieldList, { name });
 
     return new Field(field);
   }
