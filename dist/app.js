@@ -217,7 +217,7 @@ if (Fliplet.Env.get('development')) {
 var data = Fliplet.Widget.getData();
 data.fields = data.fields || {};
 function initializeInterface() {
-  var fields = _.get(data, 'configuration.fields', []);
+  var fields = Fliplet.Utils.get(data, 'configuration.fields', []);
   if (!fields.length) {
     Fliplet.Modal.alert({
       message: 'This helper has not defined a list of fields for the interface.'
@@ -237,12 +237,12 @@ function initializeInterface() {
   }
   var fieldData = typeof data.instanceId === 'string' ? data.fields : data;
   fields.forEach(function (field) {
-    field.value = _.get(fieldData, field.name, field["default"]);
+    field.value = Fliplet.Utils.get(fieldData, field.name, field["default"]);
     if (field.type === 'list') {
       field.value = (field.value || []).map(function (item) {
-        var list = _.cloneDeep(field.fields);
+        var list = Fliplet.Utils.cloneDeep(field.fields);
         list.forEach(function (listItem) {
-          listItem.value = _.get(item, listItem.name, listItem["default"]);
+          listItem.value = Fliplet.Utils.get(item, listItem.name, listItem["default"]);
         });
         return list;
       });
@@ -264,9 +264,9 @@ function initializeInterface() {
     }
   });
   Vue.filter('panelHeading', function (fields, name) {
-    var field = _.find(fields, {
+    var field = Fliplet.Utils.find(fields, {
       name: name
-    }) || _.first(fields);
+    }) || Fliplet.Utils.first(fields);
     return field && (field.value || field.placeholder) || 'New field';
   });
   Vue.directive('sortable', {
@@ -537,7 +537,7 @@ __webpack_require__.r(__webpack_exports__);
     validationObserver: VeeValidate.ValidationObserver
   },
   data: function data() {
-    return _.assign({
+    return Fliplet.Utils.assign({
       fields: {},
       showSubmit: window.parent === window && Fliplet.Env.get('development')
     }, Fliplet.Widget.getData(), {
@@ -551,7 +551,7 @@ __webpack_require__.r(__webpack_exports__);
     findOne: _libs_lookups__WEBPACK_IMPORTED_MODULE_4__["findOne"],
     children: _libs_lookups__WEBPACK_IMPORTED_MODULE_4__["findChildren"],
     onUpdateValue: function onUpdateValue(name, value) {
-      var field = _.find(this.configuration.fields, {
+      var field = Fliplet.Utils.find(this.configuration.fields, {
         name: name
       });
       if (!field) {
@@ -618,7 +618,7 @@ __webpack_require__.r(__webpack_exports__);
                 } catch (e) {
                   // Silent error
                 }
-                data = _.omit(data, ['id', 'package', 'uuid', 'version']);
+                data = Fliplet.Utils.omit(data, ['id', 'package', 'uuid', 'version']);
                 if (_this.uuid) {
                   // Save to widget instance settings data
                   return Fliplet.Widget.save(data).then(function () {
@@ -2157,7 +2157,7 @@ VeeValidate.extend('required', {
     } else if (Array.isArray(value) || typeof value === 'string') {
       valid = value.length;
     } else if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(value) === 'object') {
-      valid = !_.isEmpty(value);
+      valid = !Fliplet.Utils.isEmpty(value);
     } else {
       valid = !!value;
     }
@@ -2216,8 +2216,8 @@ VeeValidate.extend('required', {
 
       // Parse rules property to support all the rules supported by vee-validate using object expression
       // https://vee-validate.logaretm.com/v3/advanced/rules-object-expression.html#defining-rules
-      if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(this.rules) === 'object' && !_.isEmpty(this.rules)) {
-        _.assign(rules, this.rules);
+      if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(this.rules) === 'object' && !Fliplet.Utils.isEmpty(this.rules)) {
+        Fliplet.Utils.assign(rules, this.rules);
       }
 
       // Use custom validate function as custom validation rule
@@ -2245,7 +2245,7 @@ VeeValidate.extend('required', {
     value: function value(newValue, oldValue) {
       // This field is used in a list
       if (this.listName) {
-        _.find(this.$parentList.value[this.index], {
+        Fliplet.Utils.find(this.$parentList.value[this.index], {
           name: this.name
         }).value = newValue;
         this.$parentList.onListValueChanged(this.name);
@@ -2304,7 +2304,7 @@ VeeValidate.extend('required', {
               _context.next = 3;
               return Promise.all(_this.$refs.fieldInstances.map(function (field) {
                 return field.onSubmit().then(function (result) {
-                  _.find(_this.value[field.index], {
+                  Fliplet.Utils.find(_this.value[field.index], {
                     name: field.name
                   }).value = result;
                 });
@@ -2396,7 +2396,7 @@ VeeValidate.extend('required', {
       if (!Array.isArray(this.value)) {
         this.$set(this, 'value', []);
       }
-      var item = _.map(this.fields, function (field) {
+      var item = Fliplet.Utils.map(this.fields, function (field) {
         return Object.assign({}, field, {
           value: field["default"]
         });
@@ -2471,7 +2471,7 @@ VeeValidate.extend('required', {
         };
       } else if (this["package"] === 'com.fliplet.data-source-provider') {
         // Apply default values to ensure data sources and security rules are correctly managed
-        value = _.assignIn({
+        value = Fliplet.Utils.assignIn({
           appId: Fliplet.Env.get('appId')
         }, this["default"], value);
 
@@ -2500,8 +2500,8 @@ VeeValidate.extend('required', {
       this.providerPromise = new Promise(function (resolve) {
         _this5.provider.then(function (result) {
           var value;
-          if (_.isObject(result.data) && !Array.isArray(result.data)) {
-            value = _.omit(result.data, ['package', 'version']);
+          if (Fliplet.Utils.isObject(result.data) && !Array.isArray(result.data)) {
+            value = Fliplet.Utils.omit(result.data, ['package', 'version']);
           } else {
             value = result.data;
           }
@@ -2529,7 +2529,7 @@ VeeValidate.extend('required', {
     normalizeOptions: function normalizeOptions() {
       var _this6 = this;
       if (['radio', 'checkbox', 'dropdown'].indexOf(this.type) > -1) {
-        _.forEach(this.options, function (option, i) {
+        Fliplet.Utils.forEach(this.options, function (option, i) {
           if (_babel_runtime_helpers_typeof__WEBPACK_IMPORTED_MODULE_1___default()(option) !== 'object') {
             _this6.options[i] = {
               value: option
@@ -2563,7 +2563,7 @@ VeeValidate.extend('required', {
       });
     } else if (this.type === 'checkbox' && !Array.isArray(this.value)) {
       return waitForAccordion.then(function () {
-        _this7.$set(_this7, 'value', _.compact([_this7.value]));
+        _this7.$set(_this7, 'value', Fliplet.Utils.compact([_this7.value]));
       });
     }
     if (this.ready) {
@@ -2592,8 +2592,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _class_field__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(17);
 
 var data = Fliplet.Widget.getData();
-var instances = _.get(data, 'helperInstances') || _.get(data, 'widgetInstances') || [];
-var instanceId = _.get(data, 'instanceId', '');
+var instances = Fliplet.Utils.get(data, 'helperInstances') || Fliplet.Utils.get(data, 'widgetInstances') || [];
+var instanceId = Fliplet.Utils.get(data, 'instanceId', '');
 var fieldInstances = [];
 
 /**
@@ -2603,7 +2603,7 @@ var fieldInstances = [];
  * @returns {Boolean} Whether the element matches
  */
 function helperMatches(instance, predicate) {
-  return instance.id !== instanceId && instance.isChildren && (predicate ? _.find([instance], predicate) : true);
+  return instance.id !== instanceId && instance.isChildren && (predicate ? Fliplet.Utils.find([instance], predicate) : true);
 }
 
 /**
@@ -2629,7 +2629,7 @@ function prepareFilter(predicate) {
  */
 function findAll(predicate) {
   predicate = prepareFilter(predicate);
-  return _.filter(instances, function (instance) {
+  return Fliplet.Utils.filter(instances, function (instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -2641,7 +2641,7 @@ function findAll(predicate) {
  */
 function findOne(predicate) {
   predicate = prepareFilter(predicate);
-  return _.find(instances, function (instance) {
+  return Fliplet.Utils.find(instances, function (instance) {
     return helperMatches(instance, predicate);
   });
 }
@@ -2653,8 +2653,8 @@ function findOne(predicate) {
  */
 function findChildren(predicate) {
   predicate = prepareFilter(predicate);
-  return _.filter(instances, function (instance) {
-    return instance.id !== instanceId && instance.parentId && instance.parentId === instanceId && (predicate ? _.find([instance], predicate) : true);
+  return Fliplet.Utils.filter(instances, function (instance) {
+    return instance.id !== instanceId && instance.parentId && instance.parentId === instanceId && (predicate ? Fliplet.Utils.find([instance], predicate) : true);
   });
 }
 function registerFields(fields) {
@@ -2664,7 +2664,7 @@ function registerFields(fields) {
   fieldInstances = fields;
 }
 function setFieldProperty(fieldName, prop, value) {
-  var field = _.find(fieldInstances, {
+  var field = Fliplet.Utils.find(fieldInstances, {
     name: fieldName
   });
   if (!field) {
@@ -2684,10 +2684,10 @@ Fliplet.Helper.find = function (predicate) {
     return Fliplet.API.request({
       url: 'v1/apps/' + Fliplet.Env.get('appId') + '/pages/' + Fliplet.Env.get('pageId') + '/helper-instances'
     }).then(function (response) {
-      return _.filter(response.helpers, predicate);
+      return Fliplet.Utils.filter(response.helpers, predicate);
     });
   }
-  return _.filter(instances, prepareFilter(predicate));
+  return Fliplet.Utils.filter(instances, prepareFilter(predicate));
 };
 
 /**
@@ -2699,13 +2699,13 @@ Fliplet.Helper.findOne = function (predicate) {
   // Allow async find for widget instances
   if (typeof data.id === 'number') {
     return Fliplet.Helper.find(predicate).then(function (results) {
-      return _.first(results);
+      return Fliplet.Utils.first(results);
     });
   }
-  return _.find(instances, prepareFilter(predicate));
+  return Fliplet.Utils.find(instances, prepareFilter(predicate));
 };
 Fliplet.Helper.field = function (name) {
-  var field = _.find(fieldInstances, {
+  var field = Fliplet.Utils.find(fieldInstances, {
     name: name
   });
   return new _class_field__WEBPACK_IMPORTED_MODULE_0__["Field"](field);
@@ -2897,7 +2897,7 @@ var FieldList = /*#__PURE__*/function () {
   return _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(FieldList, [{
     key: "field",
     value: function field(name) {
-      var field = _.find(_classPrivateFieldGet(_fieldList, this), {
+      var field = Fliplet.Utils.find(_classPrivateFieldGet(_fieldList, this), {
         name: name
       });
       return new _field__WEBPACK_IMPORTED_MODULE_2__["Field"](field);

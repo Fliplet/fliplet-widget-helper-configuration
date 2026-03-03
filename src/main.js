@@ -95,7 +95,7 @@ const data = Fliplet.Widget.getData();
 data.fields = data.fields || {};
 
 function initializeInterface() {
-  const fields = _.get(data, 'configuration.fields', []);
+  const fields = Fliplet.Utils.get(data, 'configuration.fields', []);
 
   if (!fields.length) {
     Fliplet.Modal.alert({ message: 'This helper has not defined a list of fields for the interface.' });
@@ -121,14 +121,14 @@ function initializeInterface() {
   const fieldData = typeof data.instanceId === 'string' ? data.fields : data;
 
   fields.forEach((field) => {
-    field.value = _.get(fieldData, field.name, field.default);
+    field.value = Fliplet.Utils.get(fieldData, field.name, field.default);
 
     if (field.type === 'list') {
       field.value = (field.value || []).map((item) => {
-        const list = _.cloneDeep(field.fields);
+        const list = Fliplet.Utils.cloneDeep(field.fields);
 
         list.forEach((listItem) => {
-          listItem.value = _.get(item, listItem.name, listItem.default);
+          listItem.value = Fliplet.Utils.get(item, listItem.name, listItem.default);
         });
 
         return list;
@@ -152,7 +152,7 @@ function initializeInterface() {
   });
 
   Vue.filter('panelHeading', function(fields, name) {
-    const field = _.find(fields, { name }) || _.first(fields);
+    const field = Fliplet.Utils.find(fields, { name }) || Fliplet.Utils.first(fields);
 
     return field && (field.value || field.placeholder) || 'New field';
   });
